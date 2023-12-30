@@ -331,7 +331,7 @@ class Validate:
 		self.__args.middle  = self.__parse_digit(self.__args.middle, "middle")   # required
 		self.__args.minimum = self.__parse_digit(self.__args.minimum, "minimum") if self.__args.minimum else self.__args.middle
 		self.__args.maximum = self.__parse_digit(self.__args.maximum, "maximum") if self.__args.maximum else self.__args.middle
-		self.__args.quotes  = self.__parse_qoutes(self.__args.quotes)            if self.__args.quotes else self.__get_quote("original")
+		self.__args.quotes  = self.__parse_qoutes(self.__args.quotes)            if self.__args.quotes else self.__get_quotes("original")
 		self.__args         = vars(self.__args)
 		return self.__proceed
 
@@ -368,14 +368,13 @@ class Validate:
 				self.__error("Supported quotes are 'original', 'single', 'double', 'backtick', or 'all'")
 				break
 			elif entry == "all":
-				tmp.clear()
-				tmp.extend(self.__get_quote(entry))
+				tmp = self.__get_quotes(entry)
 				break
 			else:
-				tmp.extend(self.__get_quote(entry))
+				tmp += self.__get_quotes(entry)
 		return unique(tmp)
 
-	def __get_quote(self, value):
+	def __get_quotes(self, value):
 		if value == "original":
 			return [""]
 		elif value == "single":
