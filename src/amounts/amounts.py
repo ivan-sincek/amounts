@@ -1,53 +1,23 @@
 #!/usr/bin/env python3
 
-import sys
-import os
-import re
-import struct
+import argparse, os, re, struct, sys
 
-# -------------------------- INFO --------------------------
+# ----------------------------------------
 
-def basic():
-	global proceed
-	proceed = False
-	print("Amounts v3.2 ( github.com/ivan-sincek/amounts )")
-	print("")
-	print("--- Generate a wordlist for a range of amounts ---")
-	print("Usage:   python3 amounts.py -min minimum -max maximum -mid middle -o out         [-q quotes]")
-	print("Example: python3 amounts.py -min 1       -max 1000    -mid 20     -o amounts.txt [-q double]")
-	print("")
-	print("--- Generate a wordlist for a single amount ---")
-	print("Usage:   python3 amounts.py -a amount -o out         [-q quotes]")
-	print("Example: python3 amounts.py -a 20     -o amounts.txt [-q double]")
+def unique(sequence):
+	seen = set()
+	return [x for x in sequence if not (x in seen or seen.add(x))]
 
-def advanced():
-	basic()
-	print("")
-	print("DESCRIPTION")
-	print("    Generate a wordlist to fuzz amounts or any other numerical values")
-	print("MINIMUM")
-	print("    Minimum amount allowed")
-	print("    -min <minimum> - 1 | etc.")
-	print("MAXIMUM")
-	print("    Maximum amount allowed")
-	print("    -max <maximum> - 1000 | etc.")
-	print("MIDDLE")
-	print("    Amount greater than minimum, lesser than maximum, and other than zero")
-	print("    Preferably a multi-digit value")
-	print("    -mid <middle> - 20 | etc.")
-	print("AMOUNT")
-	print("    Single amount")
-	print("    Preferably a multi-digit value")
-	print("    -a <amount> - 20 | etc.")
-	print("OUT")
-	print("    Output file")
-	print("    -o <out> - amounts.txt | etc.")
-	print("QUOTES")
-	print("    Embrace amounts in quotes")
-	print("    Use comma-separated values")
-	print("    -q <quotes> - original | single | double | backtick | all")
+def write_array(data, out):
+	try:
+		with open(out, "w") as stream:
+			for line in data:
+				stream.write(str(line).strip() + "\n")
+		print(("Results have been saved to '{0}'").format(out))
+	except FileNotFoundError:
+		print(("Cannot save results to '{0}'").format(out))
 
-# ------------------- MISCELENIOUS BEGIN -------------------
+# ----------------------------------------
 
 def is_int(string):
 	return re.match(r"^[\-]{0,1}\d+$", string)
@@ -55,9 +25,9 @@ def is_int(string):
 def is_float(string):
 	return re.match(r"^[\-]{0,1}\d+[\.]{0,1}\d+$", string)
 
-def parse_digit(string, parse):
+def parse_digit(string, string_type):
 	tmp = {
-		"type": parse,
+		"type": string_type,
 		"scope": "",
 		"orig": {
 			"str": None,
@@ -70,50 +40,16 @@ def parse_digit(string, parse):
 	const = "\x2D"
 	if string.startswith(const):
 		tmp["scope"] = const
-	if parse == "int":
+	if string_type == "int":
 		tmp["orig"]["num"] = int(string)
 		tmp["orig"]["str"] = str(tmp["orig"]["num"])
-	elif parse == "float":
+	elif string_type == "float":
 		tmp["orig"]["num"] = float(string)
 		tmp["orig"]["str"] = ("{0:.12f}").format(tmp["orig"]["num"]).rstrip("0")
 	tmp["base"]["str"] = tmp["orig"]["str"].lstrip(const)
 	return tmp
 
-def unique(sequence):
-	seen = set()
-	return [x for x in sequence if not (x in seen or seen.add(x))]
-
-def parse_comma_values(string, values):
-	tmp = []
-	for entry in string.split("\x2C"):
-		entry = entry.strip()
-		if not entry:
-			continue
-		elif entry == "all": # all
-			tmp = [entry]
-			break
-		elif entry not in values:
-			tmp = []
-			break
-		else:
-			tmp.append(entry)
-	return unique(tmp)
-
-def fetch_quotes(array):
-	tmp = []
-	for entry in array:
-		if entry == "original":
-			tmp.append("")
-		elif entry == "single":
-			tmp.append("\x27")
-		elif entry == "double":
-			tmp.append("\x22")
-		elif entry == "backtick":
-			tmp.append("\x60")
-		elif entry == "all":
-			tmp = ["", "\x27", "\x22", "\x60"]
-			break
-	return unique(tmp)
+# ----------------------------------------
 
 def separate(digit, separator, skip = 3):
 	scope = digit["scope"]
@@ -132,129 +68,6 @@ def separate(digit, separator, skip = 3):
 		tmp += digit[i:i+skip]
 	tmp = scope + tmp[::-1] + decimal
 	return tmp
-
-def increment(digit, value = 1):
-	return str(digit["orig"]["num"] + value)
-
-def decrement(digit, value = 1):
-	return str(digit["orig"]["num"] - value)
-
-def to_bin(digit):
-	if digit["type"] == "int":
-		return bin(digit["orig"]["num"])
-	elif digit["type"] == "float":
-		# binary representation of a float number
-		# v1
-		return "0b" + format(struct.unpack("!I", struct.pack("!f", digit["orig"]["num"]))[0], "032b")
-		# v2
-		# return "0b" + ("").join([("{0:0>8b}").format(char) for char in struct.pack("!f", digit)])
-
-def to_hex(digit):
-	if digit["type"] == "int":
-		return hex(digit["orig"]["num"])
-	elif digit["type"] == "float":
-		return float.hex(digit["orig"]["num"])
-
-def to_ascii_hex(digit):
-	const = "\\x"
-	return const + const.join([char.encode().hex() for char in digit["orig"]["str"]])
-
-def to_unicode_hex(digit):
-	const = "\\u"
-	tmp = ""
-	for char in digit["orig"]["str"]:
-		char = char.encode().hex()
-		length = len(char)
-		if length > 4:
-			continue
-		tmp += const + (4 - length) * "0" + char
-	return tmp
-
-def fuzz(char, size, iterations, prepend = None, append = None):
-	tmp = []
-	for i in range(1, iterations + 1):
-		string = char * size * i
-		if prepend:
-			string = prepend + string[len(prepend):]
-		if append:
-			string = string[:-len(append)] + append
-		tmp.append(string)
-	return unique(tmp)
-
-def add_quotes(string, quotes):
-	return quotes + string.replace(quotes, "\\" + quotes) + quotes
-
-def write_file(array, out):
-	with open(out, "w") as stream:
-		for entry in array:
-			stream.write(str(entry) + "\n")
-	stream.close()
-	print(("{0} results have been saved to '{1}'").format(len(array), out))
-
-# -------------------- MISCELENIOUS END --------------------
-
-# -------------------- VALIDATION BEGIN --------------------
-
-# my own validation algorithm
-
-proceed = True
-
-def print_error(msg):
-	print(("ERROR: {0}").format(msg))
-
-def error(msg, help = False):
-	global proceed
-	proceed = False
-	print_error(msg)
-	if help:
-		print("Use -h for basic and --help for advanced info")
-
-args = {"minimum": None, "maximum": None, "middle": None, "amount": None, "out": None, "quotes": None}
-
-def validate_digit(value, text):
-	text = text.capitalize()
-	if is_int(value):
-		value = parse_digit(value, "int")
-	elif is_float(value):
-		if len(value.split("\x2E", 1)[0]) > 12:
-			error(("{0} amount cannot have more than 12 decimal places").format(text))
-		else:
-			value = parse_digit(value, "float")
-	else:
-		error(("{0} amount must be an integer or float").format(text))
-	return value
-
-def validate(key, value):
-	global args
-	value = value.strip()
-	if len(value) > 0:
-		if key == "-min" and args["minimum"] is None:
-			args["minimum"] = validate_digit(value, "minimum")
-		elif key == "-max" and args["maximum"] is None:
-			args["maximum"] = validate_digit(value, "maximum")
-		elif key == "-mid" and args["middle"] is None:
-			args["middle"] = validate_digit(value, "middle")
-		elif key == "-a" and args["amount"] is None:
-			args["amount"] = validate_digit(value, "single")
-		elif key == "-o" and args["out"] is None:
-			args["out"] = value
-		elif key == "-q" and args["quotes"] is None:
-			args["quotes"] = parse_comma_values(value.lower(), ["original", "single", "double", "backtick", "all"])
-			if not args["quotes"]:
-				error("Supported quotes are 'original', 'single', 'double', 'backtick', or 'all'")
-			else:
-				args["quotes"] = fetch_quotes(args["quotes"])
-
-def check(argc, args):
-	count = 0
-	for key in args:
-		if args[key] is not None:
-			count += 1
-	return argc - count == argc / 2
-
-# --------------------- VALIDATION END ---------------------
-
-# ----------------------- TASK BEGIN -----------------------
 
 def separators(digit):
 	# test amount separators
@@ -292,6 +105,9 @@ def currencies(digit):
 			tmp.extend([currency + scope + digit["base"]["str"], scope + currency + digit["base"]["str"]])
 	return unique(tmp)
 
+def add_quotes(string, quotes):
+	return quotes + string.replace(quotes, "\\" + quotes) + quotes
+
 def brackets(digit, quotes = ""):
 	# test embracing amount with brackets and expanding
 	tmp = []
@@ -310,6 +126,12 @@ def brackets(digit, quotes = ""):
 		])
 	return unique(tmp)
 
+def increment(digit, value = 1):
+	return str(digit["orig"]["num"] + value)
+
+def decrement(digit, value = 1):
+	return str(digit["orig"]["num"] - value)
+
 def flows(minimum, maximum):
 	# test underflows and overflows
 	tmp = [
@@ -320,6 +142,35 @@ def flows(minimum, maximum):
 		for scope in ["", "\x2D"]:
 			tmp.append(scope + value)
 	return unique(tmp)
+
+def to_bin(digit):
+	if digit["type"] == "int":
+		return bin(digit["orig"]["num"])
+	elif digit["type"] == "float":
+		# binary representation of a float number
+		return "0b" + format(struct.unpack("!I", struct.pack("!f", digit["orig"]["num"]))[0], "032b") # v1
+		# return "0b" + ("").join([("{0:0>8b}").format(char) for char in struct.pack("!f", digit)]) # v2
+
+def to_hex(digit):
+	if digit["type"] == "int":
+		return hex(digit["orig"]["num"])
+	elif digit["type"] == "float":
+		return float.hex(digit["orig"]["num"])
+
+def to_ascii_hex(digit):
+	const = "\\x"
+	return const + const.join([char.encode().hex() for char in digit["orig"]["str"]])
+
+def to_unicode_hex(digit):
+	const = "\\u"
+	tmp = ""
+	for char in digit["orig"]["str"]:
+		char = char.encode().hex()
+		length = len(char)
+		if length > 4:
+			continue
+		tmp += const + (4 - length) * "0" + char
+	return tmp
 
 def notations(minimum, maximum, middle):
 	# test binary, hexadecimal, and exponential notations
@@ -373,6 +224,17 @@ def other(digit):
 		"\x2D2147483649", "2147483648", "4294967296"
 	])
 
+def fuzz(char, size, iterations, prepend = None, append = None):
+	tmp = []
+	for i in range(1, iterations + 1):
+		string = char * size * i
+		if prepend:
+			string = prepend + string[len(prepend):]
+		if append:
+			string = string[:-len(append)] + append
+		tmp.append(string)
+	return unique(tmp)
+
 def lengths():
 	# test various lengths
 	tmp = []
@@ -380,47 +242,159 @@ def lengths():
 		tmp.extend(fuzz("9", 128, 3, scope))
 	return unique(tmp)
 
-def generate(minimum, maximum, middle, quotes = ""):
-	amounts = []
-	amounts.extend([minimum["orig"]["str"], maximum["orig"]["str"], middle["orig"]["str"]])
-	amounts.extend(separators(middle))
-	amounts.extend(zeros(middle))
-	amounts.extend(scopes(middle))
-	amounts.extend(currencies(middle))
-	amounts.extend(brackets(middle, quotes))
-	amounts.extend(flows(minimum, maximum))
-	amounts.extend(notations(minimum, maximum, middle))
-	amounts.extend(other(middle))
-	amounts.extend(lengths())
-	if quotes:
-		amounts = [add_quotes(amount, quotes) for amount in amounts]
-	return unique(amounts)
+# ----------------------------------------
+
+class Amounts:
+
+	def __init__(self, minimum, maximum, middle, quotes):
+		self.__minimum = minimum
+		self.__maximum = maximum
+		self.__middle  = middle
+		self.__quotes  = quotes
+		self.__amounts = []
+
+	def run(self):
+		for quotes in self.__quotes:
+			tmp = []
+			tmp.extend([self.__minimum["orig"]["str"], self.__maximum["orig"]["str"], self.__middle["orig"]["str"]])
+			tmp.extend(separators(self.__middle))
+			tmp.extend(zeros(self.__middle))
+			tmp.extend(scopes(self.__middle))
+			tmp.extend(currencies(self.__middle))
+			tmp.extend(brackets(self.__middle, quotes))
+			tmp.extend(flows(self.__minimum, self.__maximum))
+			tmp.extend(notations(self.__minimum, self.__maximum, self.__middle))
+			tmp.extend(other(self.__middle))
+			tmp.extend(lengths())
+			if quotes:
+				tmp = [add_quotes(entry, quotes) for entry in tmp]
+			self.__amounts.extend(tmp)
+		return unique(self.__amounts)
+
+# ----------------------------------------
+
+class MyArgParser(argparse.ArgumentParser):
+
+	def print_help(self):
+		print("Amounts v3.3 ( github.com/ivan-sincek/amounts )")
+		print("")
+		print("--- Generate a wordlist from an amount range ---")
+		print("Usage:   python3 amounts.py -min minimum -max maximum -mid middle -o out         [-q quotes]")
+		print("Example: python3 amounts.py -min 1       -max 1000    -mid 20     -o amounts.txt [-q double]")
+		print("")
+		print("--- Generate a wordlist from a single amount ---")
+		print("Usage:   python3 amounts.py -mid middle -o out         [-q quotes]")
+		print("Example: python3 amounts.py -mid 20     -o amounts.txt [-q double]")
+		print("")
+		print("DESCRIPTION")
+		print("    Generate a wordlist to fuzz amounts or any other numerical values")
+		print("MINIMUM")
+		print("    Minimum amount allowed")
+		print("    If not specified, middle amount will be used")
+		print("    -min, --minimum = 1 | etc.")
+		print("MAXIMUM")
+		print("    Maximum amount allowed")
+		print("    If not specified, middle amount will be used")
+		print("    -max, --maximum = 1000 | etc.")
+		print("MIDDLE")
+		print("    Preferably a multi-digit amount greater than minimum, lesser than maximum, and other than zero")
+		print("    -mid, --middle = 20 | etc.")
+		print("OUT")
+		print("    Output file")
+		print("    -o, --out = amounts.txt | etc.")
+		print("QUOTES")
+		print("    Enclose amounts in quotes")
+		print("    Use comma-separated values")
+		print("    -q, --quotes = original | single | double | backtick | all")
+
+	def error(self, message):
+		if len(sys.argv) > 1:
+			print("Missing a mandatory option (-mid, -o) and/or optional (-min, -max, -q)")
+			print("Use -h or --help for more info")
+		else:
+			self.print_help()
+		exit()
+
+class Validate:
+
+	def __init__(self):
+		self.__proceed = True
+		self.__parser  = MyArgParser()
+		self.__parser.add_argument("-min", "--minimum", required = False, type = str      , default = "")
+		self.__parser.add_argument("-max", "--maximum", required = False, type = str      , default = "")
+		self.__parser.add_argument("-mid", "--middle" , required = True , type = str      , default = "")
+		self.__parser.add_argument("-o"  , "--out"    , required = True , type = str      , default = "")
+		self.__parser.add_argument("-q"  , "--quotes" , required = False, type = str.lower, default = "")
+
+	def run(self):
+		self.__args = self.__parser.parse_args()
+		self.__args.middle  = self.__parse_digit(self.__args.middle, "middle")   # required
+		self.__args.minimum = self.__parse_digit(self.__args.minimum, "minimum") if self.__args.minimum else self.__args.middle
+		self.__args.maximum = self.__parse_digit(self.__args.maximum, "maximum") if self.__args.maximum else self.__args.middle
+		self.__args.quotes  = self.__parse_qoutes(self.__args.quotes)            if self.__args.quotes else self.__get_quote("original")
+		self.__args         = vars(self.__args)
+		return self.__proceed
+
+	def get_arg(self, key):
+		return self.__args[key]
+
+	def __error(self, msg):
+		self.__proceed = False
+		self.__print_error(msg)
+
+	def __print_error(self, msg):
+		print(("ERROR: {0}").format(msg))
+
+	def __parse_digit(self, value, target):
+		target = target.capitalize()
+		if is_int(value):
+			value = parse_digit(value, "int")
+		elif is_float(value):
+			if len(value.split("\x2E", 1)[-1]) > 12:
+				self.__error(("{0} amount cannot have more than 12 decimal places").format(target))
+			else:
+				value = parse_digit(value, "float")
+		else:
+			self.__error(("{0} amount must be either integer or float").format(target))
+		return value
+
+	def __parse_qoutes(self, value):
+		tmp = []
+		for entry in value.lower().split("\x2C"):
+			entry = entry.strip()
+			if not entry:
+				continue
+			elif entry not in ["original", "single", "double", "backtick", "all"]:
+				self.__error("Supported quotes are 'original', 'single', 'double', 'backtick', or 'all'")
+				break
+			elif entry == "all":
+				tmp.clear()
+				tmp.extend(self.__get_quote(entry))
+				break
+			else:
+				tmp.extend(self.__get_quote(entry))
+		return unique(tmp)
+
+	def __get_quote(self, value):
+		if value == "original":
+			return [""]
+		elif value == "single":
+			return ["\x27"]
+		elif value == "double":
+			return ["\x22"]
+		elif value == "backtick":
+			return ["\x60"]
+		elif value == "all":
+			return ["", "\x27", "\x22", "\x60"]
+
+# ----------------------------------------
 
 def main():
-	argc = len(sys.argv) - 1
-
-	if argc == 0:
-		advanced()
-	elif argc == 1:
-		if sys.argv[1] == "-h":
-			basic()
-		elif sys.argv[1] == "--help":
-			advanced()
-		else:
-			error("Incorrect usage", True)
-	elif argc % 2 == 0 and argc <= len(args) * 2:
-		for i in range(1, argc, 2):
-			validate(sys.argv[i], sys.argv[i + 1])
-		if (args["amount"] and (args["minimum"] is not None or args["maximum"] is not None or args["middle"] is not None)) or (not args["amount"] and (args["minimum"] is None or args["maximum"] is None or args["middle"] is None)) or args["out"] is None or not check(argc, args):
-			error("Missing a mandatory option (-min, -max, -mid, -o) and/or optional (-q)")
-			error("Missing a mandatory option (-a, -o) and/or optional (-q)", True)
-	else:
-		error("Incorrect usage", True)
-
-	if proceed:
+	validate = Validate()
+	if validate.run():
 		print("##########################################################################")
 		print("#                                                                        #")
-		print("#                              Amounts v3.2                              #")
+		print("#                              Amounts v3.3                              #")
 		print("#                                 by Ivan Sincek                         #")
 		print("#                                                                        #")
 		print("# Generate a wordlist to fuzz amounts or any other numerical values.     #")
@@ -428,16 +402,16 @@ def main():
 		print("# Feel free to donate ETH at 0xbc00e800f29524AD8b0968CEBEAD4cD5C5c1f105. #")
 		print("#                                                                        #")
 		print("##########################################################################")
-		if args["amount"]:
-			args["minimum"] = args["maximum"] = args["middle"] = args["amount"]
-		if not args["quotes"]:
-			args["quotes"] = [""]
-		collection = []
-		for quotes in args["quotes"]:
-			collection.extend(generate(args["minimum"], args["maximum"], args["middle"], quotes))
-		write_file(unique(collection), args["out"])
+		out = validate.get_arg("out")
+		amounts = Amounts(
+			validate.get_arg("minimum"),
+			validate.get_arg("maximum"),
+			validate.get_arg("middle"),
+			validate.get_arg("quotes")
+		)
+		results = amounts.run()
+		if results:
+			write_array(results, out)
 
 if __name__ == "__main__":
 	main()
-
-# ------------------------ TASK END ------------------------

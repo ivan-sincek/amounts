@@ -26,7 +26,7 @@ Complimentary wordlists:
 
 Extend this script to your liking.
 
-Tested on Kali Linux v2023.3 (64-bit).
+Tested on Kali Linux v2023.4 (64-bit).
 
 Made for educational purposes. I hope it will help!
 
@@ -40,8 +40,6 @@ Made for educational purposes. I hope it will help!
 ## How to Install
 
 ```fundamental
-pip3 install amounts
-
 pip3 install --upgrade amounts
 ```
 
@@ -56,7 +54,7 @@ python3 -m pip install --upgrade build
 
 python3 -m build
 
-python3 -m pip install dist/amounts-3.2-py3-none-any.whl
+python3 -m pip install dist/amounts-3.3-py3-none-any.whl
 ```
 
 ## Generated Amounts
@@ -159,37 +157,34 @@ An Array
 ## Usage
 
 ```fundamental
-Amounts v3.2 ( github.com/ivan-sincek/amounts )
+Amounts v3.3 ( github.com/ivan-sincek/amounts )
 
---- Generate a wordlist for a range of amounts ---
+--- Generate a wordlist from an amount range ---
 Usage:   python3 amounts.py -min minimum -max maximum -mid middle -o out         [-q quotes]
 Example: python3 amounts.py -min 1       -max 1000    -mid 20     -o amounts.txt [-q double]
 
---- Generate a wordlist for a single amount ---
-Usage:   python3 amounts.py -a amount -o out         [-q quotes]
-Example: python3 amounts.py -a 20     -o amounts.txt [-q double]
+--- Generate a wordlist from a single amount ---
+Usage:   python3 amounts.py -mid middle -o out         [-q quotes]
+Example: python3 amounts.py -mid 20     -o amounts.txt [-q double]
 
 DESCRIPTION
     Generate a wordlist to fuzz amounts or any other numerical values
 MINIMUM
     Minimum amount allowed
-    -min <minimum> - 1 | etc.
+    If not specified, middle amount will be used
+    -min, --minimum = 1 | etc.
 MAXIMUM
     Maximum amount allowed
-    -max <maximum> - 1000 | etc.
+    If not specified, middle amount will be used
+    -max, --maximum = 1000 | etc.
 MIDDLE
-    Amount greater than minimum, lesser than maximum, and other than zero
-    Preferably a multi-digit value
-    -mid <middle> - 20 | etc.
-AMOUNT
-    Single amount
-    Preferably a multi-digit value
-    -a <amount> - 20 | etc.
+    Preferably a multi-digit amount greater than minimum, lesser than maximum, and other than zero
+    -mid, --middle = 20 | etc.
 OUT
     Output file
-    -o <out> - amounts.txt | etc.
+    -o, --out = amounts.txt | etc.
 QUOTES
-    Embrace amounts in quotes
+    Enclose amounts in quotes
     Use comma-separated values
-    -q <quotes> - original | single | double | backtick | all
+    -q, --quotes = original | single | double | backtick | all
 ```
