@@ -33,19 +33,20 @@ Made for educational purposes. I hope it will help!
 ## Table of Contents
 
 * [How to Install](#how-to-install)
-* [How to Build and Install Manually](#how-to-build-and-install-manually)
+	* [Standard Install](#standard-install)
+	* [Build and Install From the Source](#build-and-install-from-the-source)
 * [Generated Amounts](#generated-amounts)
 * [Usage](#usage)
 
 ## How to Install
 
+### Standard Install
+
 ```fundamental
 pip3 install --upgrade amounts
 ```
 
-## How to Build and Install Manually
-
-Run the following commands:
+## Build and Install From the Source
 
 ```fundamental
 git clone https://github.com/ivan-sincek/amounts && cd amounts
