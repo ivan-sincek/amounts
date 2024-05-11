@@ -55,7 +55,7 @@ python3 -m pip install --upgrade build
 
 python3 -m build
 
-python3 -m pip install dist/amounts-3.3-py3-none-any.whl
+python3 -m pip install dist/amounts-3.4-py3-none-any.whl
 ```
 
 ## Generated Amounts
@@ -158,7 +158,7 @@ An Array
 ## Usage
 
 ```fundamental
-Amounts v3.3 ( github.com/ivan-sincek/amounts )
+Amounts v3.4 ( github.com/ivan-sincek/amounts )
 
 --- Generate a wordlist from an amount range ---
 Usage:   python3 amounts.py -min minimum -max maximum -mid middle -o out         [-q quotes]

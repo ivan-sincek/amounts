@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "amounts"
-version = "3.3"
+version = "3.4"
 authors = [{ name = "Ivan Sincek" }]
 description = "Generate a wordlist to fuzz amounts or any other numerical values."
 readme = "README.md"
@@ -14,7 +14,7 @@ classifiers = [
 	"License :: OSI Approved :: MIT License",
 	"Operating System :: OS Independent"
 ]
-dependencies = ["argparse>=1.4.0"]
+dependencies = []
 
 [project.urls]
 "Homepage" = "https://github.com/ivan-sincek/amounts"

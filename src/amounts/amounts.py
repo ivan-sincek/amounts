@@ -276,7 +276,7 @@ class Amounts:
 class MyArgParser(argparse.ArgumentParser):
 
 	def print_help(self):
-		print("Amounts v3.3 ( github.com/ivan-sincek/amounts )")
+		print("Amounts v3.4 ( github.com/ivan-sincek/amounts )")
 		print("")
 		print("--- Generate a wordlist from an amount range ---")
 		print("Usage:   python3 amounts.py -min minimum -max maximum -mid middle -o out         [-q quotes]")
@@ -393,7 +393,7 @@ def main():
 	if validate.run():
 		print("##########################################################################")
 		print("#                                                                        #")
-		print("#                              Amounts v3.3                              #")
+		print("#                              Amounts v3.4                              #")
 		print("#                                 by Ivan Sincek                         #")
 		print("#                                                                        #")
 		print("# Generate a wordlist to fuzz amounts or any other numerical values.     #")
