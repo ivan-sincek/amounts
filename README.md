@@ -1,6 +1,6 @@
 # Amounts
 
-Generate a wordlist to fuzz amounts or any other numerical values. Based on [Common Security Issues in Financially-Oriented Web Applications](https://research.nccgroup.com/wp-content/uploads/2020/07/common_security_issues_in_financially-orientated_web.pdf).
+Generate a wordlist to fuzz amounts or any other numerical values. Based on [Common Security Issues in Financially-Oriented Web Applications](https://soroush.me/downloadable/common-security-issues-in-financially-orientated-web-applications.pdf).
 
 Bypass minimum and maximum restrictions, cause an unintended behavior and errors, etc.
 
